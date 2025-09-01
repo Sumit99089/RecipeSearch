@@ -2,6 +2,7 @@ package com.example.recipiesearch.data.repository
 
 import coil.network.HttpException
 import com.example.recipiesearch.data.local.RecipieDao
+import com.example.recipiesearch.data.local.RecipieDatabase
 import com.example.recipiesearch.data.mapper.toRecipie
 import com.example.recipiesearch.data.mapper.toRecipieEntity
 import com.example.recipiesearch.data.remote.RecipieSearchApi
@@ -17,10 +18,10 @@ import javax.inject.Singleton
 @Singleton
 class RecipieRepositoryImpl @Inject constructor(
     val api: RecipieSearchApi,
-    val dao: RecipieDao
+    val db: RecipieDatabase
 ) : RecipieRepository {
 
-
+    private val dao = db.dao
     override suspend fun getAllRecipies(query: String): Flow<Resource<List<Recipie>>> {
         return flow {
             emit(Resource.Loading(true))

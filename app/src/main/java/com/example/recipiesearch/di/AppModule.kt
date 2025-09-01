@@ -12,6 +12,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 import android.app.Application
 import androidx.room.Room
+import com.example.recipiesearch.data.local.RecipieDao
 import com.example.recipiesearch.data.local.RecipieDatabase
 
 
@@ -40,4 +41,5 @@ object AppModule {
             "stockdb.db"
         ).build()
     }
+
 }
