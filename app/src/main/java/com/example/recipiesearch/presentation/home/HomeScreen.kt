@@ -8,8 +8,5 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun HomeScreen(
      homeViewModel: HomeViewModel = hiltViewModel()
 ) {
-    Log.d(
-        "HomeScreen",
-        "HomeScreen: ${homeViewModel.state.recipies}"
-    )
+
 }

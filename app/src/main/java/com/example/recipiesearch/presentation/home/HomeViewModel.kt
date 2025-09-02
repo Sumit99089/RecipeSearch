@@ -1,5 +1,6 @@
 package com.example.recipiesearch.presentation.home
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,8 +22,8 @@ class HomeViewModel @Inject constructor(
     private var searchJob: Job? = null
     init {
         viewModelScope.launch {
-            repository.getAllRecipies("")
-            repository.getPopularRecipies()
+//            repository.getAllRecipies("")
+            getAllRecipies()
         }
     }
 
@@ -56,6 +57,10 @@ class HomeViewModel @Inject constructor(
                                     recipies = recipies
                                 )
                             }
+                            Log.d(
+                                "HomeScreen",
+                                "HomeScreen: ${state.recipies}"
+                            )
                         }
                         is Resource.Error -> Unit
                         is Resource.Loading -> {
@@ -75,7 +80,7 @@ class HomeViewModel @Inject constructor(
                         is Resource.Success -> {
                             result.data?.let { recipies ->
                                 state = state.copy(
-                                    recipies = recipies
+                                    popularRecipies = recipies
                                 )
                             }
                         }

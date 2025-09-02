@@ -8,12 +8,12 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 import android.app.Application
 import androidx.room.Room
 import com.example.recipiesearch.data.local.RecipieDao
 import com.example.recipiesearch.data.local.RecipieDatabase
+import retrofit2.converter.gson.GsonConverterFactory
 
 
 @Module
@@ -25,7 +25,7 @@ object AppModule {
     fun provideRecipieSearchApi(): RecipieSearchApi {
         return Retrofit.Builder()
             .baseUrl(RecipieSearchApi.BASE_URL)
-            .addConverterFactory(MoshiConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
             .client(OkHttpClient.Builder()
                 .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }).build())
             .build()
