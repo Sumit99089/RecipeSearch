@@ -112,4 +112,8 @@ dependencies {
     implementation(libs.accompanist.swiperefresh)
 
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("androidx.navigation:navigation-compose:2.7.5")
+
+    // Make sure you have these existing dependencies
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 }
