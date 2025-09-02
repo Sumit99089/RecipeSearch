@@ -1,5 +1,6 @@
 package com.example.recipiesearch.presentation.favourite
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,8 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,23 +28,51 @@ import com.example.recipiesearch.domain.model.Recipie
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavouriteScreen(
-    favouriteViewModel: FavouriteViewModel = hiltViewModel()
+fun FavoriteScreen(
+    favoriteViewModel: FavouriteViewModel = hiltViewModel()
 ) {
-    val state = favouriteViewModel.state
+    val state = favoriteViewModel.state
+
+    LaunchedEffect(Unit) {
+        favoriteViewModel.onEvent(FavouriteScreenEvent.LoadFavorites)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(16.dp)
     ) {
-        Text(
-            text = "Favourite Recipes",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        // Header
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Favourite Recipes",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
 
+            IconButton(
+                onClick = {
+                    favoriteViewModel.onEvent(FavouriteScreenEvent.Refresh)
+                }
+            ) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    tint = Color.Gray
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Content
         when {
             state.isLoading -> {
                 Box(
@@ -50,26 +82,21 @@ fun FavouriteScreen(
                     CircularProgressIndicator()
                 }
             }
+
             state.error.isNotEmpty() -> {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
                 ) {
                     Text(
                         text = state.error,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
+                        color = Color(0xFFE65100),
                         modifier = Modifier.padding(16.dp)
                     )
-                    Button(
-                        onClick = { favouriteViewModel.onEvent(FavouriteScreenEvent.Refresh) }
-                    ) {
-                        Text("Retry")
-                    }
                 }
             }
-            state.favouriteRecipies.isEmpty() -> {
+
+            state.isEmpty -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -78,39 +105,46 @@ fun FavouriteScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "No favourites",
+                            Icons.Outlined.FavoriteBorder,
+                            contentDescription = "No favorites",
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            tint = Color.Gray
                         )
+
                         Spacer(modifier = Modifier.height(16.dp))
+
                         Text(
-                            text = "No favourite recipes yet",
+                            text = "No Favourite Recipes Yet",
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Gray
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Text(
-                            text = "Add some recipes to your favourites to see them here",
+                            text = "Start adding recipes to your favorites\nby tapping the heart icon",
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 8.dp)
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
             }
+
             else -> {
                 LazyColumn(
+                    modifier = Modifier.fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(state.favouriteRecipies) { recipe ->
-                        FavouriteRecipeCard(
+                    items(state.favoriteRecipes) { recipe ->
+                        FavoriteRecipeItem(
                             recipe = recipe,
-                            onRemoveFromFavourites = {
-                                favouriteViewModel.onEvent(
-                                    FavouriteScreenEvent.RemoveFromFavourites(recipe.id)
-                                )
+                            onRemoveClick = {
+                                favoriteViewModel.onEvent(FavouriteScreenEvent.RemoveFromFavorites(recipe))
+                            },
+                            onFavoriteClick = {
+                                favoriteViewModel.onEvent(FavouriteScreenEvent.ToggleFavorite(recipe))
                             }
                         )
                     }
@@ -120,38 +154,44 @@ fun FavouriteScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavouriteRecipeCard(
+fun FavoriteRecipeItem(
     recipe: Recipie,
-    onRemoveFromFavourites: () -> Unit
+    onRemoveClick: () -> Unit,
+    onFavoriteClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = recipe.image,
-                contentDescription = recipe.title,
+            // Recipe Image
+            Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.LightGray)
+            ) {
+                if (recipe.image.isNotEmpty()) {
+                    AsyncImage(
+                        model = recipe.image,
+                        contentDescription = recipe.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // Recipe Info
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -159,26 +199,47 @@ fun FavouriteRecipeCard(
                     text = recipe.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    maxLines = 2
+                    color = Color.Black,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Ready in ${recipe.readyInMinutes} min",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    text = "Ready in ${if (recipe.readyInMinutes == 0) 25 else recipe.readyInMinutes} min",
+                    fontSize = 12.sp,
+                    color = Color.Gray
                 )
             }
 
-            IconButton(
-                onClick = onRemoveFromFavourites
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Remove from favourites",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            // Actions
+            Row {
+                // Favorite Button
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = "Remove from favorites",
+                        tint = Color.Red,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Delete Button
+                IconButton(
+                    onClick = onRemoveClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

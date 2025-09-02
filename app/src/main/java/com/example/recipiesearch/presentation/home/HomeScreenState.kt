@@ -4,8 +4,10 @@ import com.example.recipiesearch.domain.model.Recipie
 
 data class HomeScreenState(
     val isLoading: Boolean = false,
-    val recipies: List<Recipie> = emptyList(),
-    val popularRecipies: List<Recipie> = emptyList(),
+    val isPopularRecipesLoading: Boolean = false,
+    val recipes: List<Recipie> = emptyList(),
+    val popularRecipes: List<Recipie> = emptyList(),
     val error: String = "",
-    val searchQuery: String = "" // Changed from Boolean to String
+    val searchQuery: String = "",
+    val isSearching: Boolean=false
 )

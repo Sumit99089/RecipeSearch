@@ -25,66 +25,100 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            getPopularRecipies() // Load popular recipes for the horizontal row
-            getAllRecipies() // Load all recipes for the main column
+            // Load popular recipes on startup
+            getPopularRecipies()
+            // Load all recipes with empty query (gets random recipes)
+            getAllRecipies("")
         }
     }
 
     fun onEvent(event: HomeScreenEvent) {
         when(event) {
-            HomeScreenEvent.Refresh -> {
+            is HomeScreenEvent.Refresh -> {
                 getPopularRecipies()
-                getAllRecipies()
+                getAllRecipies(state.searchQuery)
             }
+
+            is HomeScreenEvent.LoadPopularRecipes -> {
+                getPopularRecipies()
+            }
+
             is HomeScreenEvent.OnSearchQuery -> {
-                state = state.copy(searchQuery = event.query)
+                state = state.copy(searchQuery = event.query, isSearching = event.query.isNotBlank())
                 searchJob?.cancel()
                 searchJob = viewModelScope.launch {
-                    delay(500L)
-                    getAllRecipies()
+                    delay(500L) // Debounce search
+                    getAllRecipies(event.query)
                 }
             }
-            HomeScreenEvent.ClearSearch -> {
-                state = state.copy(searchQuery = "")
-                searchJob?.cancel()
-                getAllRecipies()
-            }
-            HomeScreenEvent.LoadPopularRecipes -> {
-                getPopularRecipies()
-            }
+
             is HomeScreenEvent.ToggleFavorite -> {
                 toggleFavorite(event.recipe)
+            }
+
+            is HomeScreenEvent.ClearSearch -> {
+                state = state.copy(searchQuery = "", isSearching = false)
+                getAllRecipies("")
             }
         }
     }
 
-    private fun getAllRecipies(
-        query: String = state.searchQuery.lowercase()
-    ) {
+    private fun getAllRecipies(query: String = "") {
         viewModelScope.launch {
+            val searchQuery = query.trim().lowercase()
+
             repository
-                .getAllRecipies(query)
+                .getAllRecipies(searchQuery.ifEmpty { "chicken" }) // Default to chicken if empty
                 .collect { result ->
                     when(result) {
                         is Resource.Success -> {
                             result.data?.let { recipies ->
                                 state = state.copy(
-                                    recipies = recipies,
+                                    recipes = recipies,
                                     error = ""
                                 )
                             }
-                            Log.d(
-                                "HomeScreen",
-                                "HomeScreen: ${state.recipies}"
-                            )
+                            Log.d("HomeScreen", "Recipes loaded: ${state.recipes.size}")
                         }
                         is Resource.Error -> {
                             state = state.copy(
-                                error = result.message ?: "An unexpected error occurred"
+                                error = result.message ?: "Unknown error occurred",
+                                isLoading = false
                             )
+                            Log.e("HomeScreen", "Error loading recipes: ${result.message}")
                         }
                         is Resource.Loading -> {
                             state = state.copy(isLoading = result.isLoading)
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun getPopularRecipies() {
+        viewModelScope.launch {
+            repository
+                .getPopularRecipies()
+                .collect { result ->
+                    when(result) {
+                        is Resource.Success -> {
+                            result.data?.let { recipies ->
+                                state = state.copy(
+                                    popularRecipes = recipies,
+                                    error = ""
+                                )
+                            }
+                            Log.d("HomeScreen", "Popular recipes loaded: ${state.popularRecipes.size}")
+                        }
+                        is Resource.Error -> {
+                            state = state.copy(
+                                error = result.message ?: "Unknown error occurred",
+                                isPopularRecipesLoading = false
+                            )
+                            Log.e("HomeScreen", "Error loading popular recipes: ${result.message}")
+                        }
+                        is Resource.Loading -> {
+                            state = state.copy(isPopularRecipesLoading = result.isLoading)
                         }
                     }
                 }
@@ -100,44 +134,24 @@ class HomeViewModel @Inject constructor(
                     repository.insertFavouriteRecipie(recipe)
                 }
 
-                // Refresh the current list to update favorite status
-                if (state.searchQuery.isEmpty()) {
-                    getPopularRecipies()
-                } else {
-                    getAllRecipies()
+                // Update local state immediately for better UX
+                val updatedRecipies = state.recipes.map {
+                    if (it.id == recipe.id) it.copy(isFavourite = !it.isFavourite) else it
                 }
-            } catch (e: Exception) {
-                state = state.copy(
-                    error = "Failed to update favorite: ${e.localizedMessage}"
-                )
-            }
-        }
-    }
+                val updatedPopularRecipies = state.popularRecipes.map {
+                    if (it.id == recipe.id) it.copy(isFavourite = !it.isFavourite) else it
+                }
 
-    private fun getPopularRecipies() {
-        viewModelScope.launch {
-            repository
-                .getPopularRecipies()
-                .collect { result ->
-                    when(result) {
-                        is Resource.Success -> {
-                            result.data?.let { recipies ->
-                                state = state.copy(
-                                    popularRecipies = recipies,
-                                    error = ""
-                                )
-                            }
-                        }
-                        is Resource.Error -> {
-                            state = state.copy(
-                                error = result.message ?: "An unexpected error occurred"
-                            )
-                        }
-                        is Resource.Loading -> {
-                            state = state.copy(isLoading = result.isLoading)
-                        }
-                    }
-                }
+                state = state.copy(
+                    recipes = updatedRecipies,
+                    popularRecipes = updatedPopularRecipies
+                )
+
+                Log.d("HomeScreen", "Toggled favorite for recipe: ${recipe.title}")
+            } catch (e: Exception) {
+                Log.e("HomeScreen", "Error toggling favorite: ${e.message}")
+                state = state.copy(error = "Failed to update favorite")
+            }
         }
     }
 }

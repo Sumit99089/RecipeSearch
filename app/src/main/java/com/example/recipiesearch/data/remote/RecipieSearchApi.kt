@@ -20,7 +20,7 @@ interface RecipieSearchApi {
 
 
     companion object {
-        const val API_KEY = "490056c33b9e4427abfde1a78cb9c4cb"
+        const val API_KEY = "07de25a4da4246a6a1bfb48102500ae7"
         const val BASE_URL = "https://api.spoonacular.com/recipes/"
     }
 }

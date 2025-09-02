@@ -1,8 +1,6 @@
 package com.example.recipiesearch.presentation.home
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -11,7 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
@@ -22,13 +19,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.recipiesearch.domain.model.Recipie
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,86 +34,86 @@ fun HomeScreen(
 ) {
      val state = homeViewModel.state
 
-     Scaffold(
-          topBar = {
-               Column(
-                    modifier = Modifier
-                         .fillMaxWidth()
-                         .background(Color.White)
-                         .padding(16.dp)
+     Column(
+          modifier = Modifier
+               .fillMaxSize()
+               .background(Color.White)
+     ) {
+          // Top Bar
+          Column(
+               modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(16.dp)
+          ) {
+               // Header
+               Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                ) {
-                    // Header
-                    Row(
-                         modifier = Modifier.fillMaxWidth(),
-                         horizontalArrangement = Arrangement.SpaceBetween,
-                         verticalAlignment = Alignment.CenterVertically
-                    ) {
-                         Column {
-                              Row(
-                                   verticalAlignment = Alignment.CenterVertically
-                              ) {
-                                   Text(
-                                        text = "👋",
-                                        fontSize = 20.sp
-                                   )
-                                   Spacer(modifier = Modifier.width(8.dp))
-                                   Text(
-                                        text = "Hey Name",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.Black
-                                   )
-                              }
+                    Column {
+                         Row(
+                              verticalAlignment = Alignment.CenterVertically
+                         ) {
                               Text(
-                                   text = "Discover tasty and healthy receipt",
-                                   fontSize = 14.sp,
-                                   color = Color.Gray
+                                   text = "👋",
+                                   fontSize = 20.sp
+                              )
+                              Spacer(modifier = Modifier.width(8.dp))
+                              Text(
+                                   text = "Hey Name",
+                                   fontSize = 18.sp,
+                                   fontWeight = FontWeight.Medium,
+                                   color = Color.Black
                               )
                          }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Search Bar
-                    OutlinedTextField(
-                         value = state.searchQuery,
-                         onValueChange = {
-                              homeViewModel.onEvent(HomeScreenEvent.OnSearchQuery(it))
-                         },
-                         placeholder = {
-                              Text(
-                                   text = "Search any recipe",
-                                   color = Color.Gray
-                              )
-                         },
-                         leadingIcon = {
-                              Icon(
-                                   Icons.Default.Search,
-                                   contentDescription = "Search",
-                                   tint = Color.Gray
-                              )
-                         },
-                         modifier = Modifier
-                              .fillMaxWidth()
-                              .height(56.dp),
-                         shape = RoundedCornerShape(28.dp),
-                         colors = OutlinedTextFieldDefaults.colors(
-                              unfocusedBorderColor = Color.LightGray,
-                              focusedBorderColor = Color.Gray,
-                              unfocusedContainerColor = Color(0xFFF5F5F5),
-                              focusedContainerColor = Color(0xFFF5F5F5)
+                         Text(
+                              text = "Discover tasty and healthy receipt",
+                              fontSize = 14.sp,
+                              color = Color.Gray
                          )
-                    )
+                    }
                }
-          },
-          bottomBar = {
-               BottomNavigationBar()
+
+               Spacer(modifier = Modifier.height(16.dp))
+
+               // Search Bar
+               OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = {
+                         homeViewModel.onEvent(HomeScreenEvent.OnSearchQuery(it))
+                    },
+                    placeholder = {
+                         Text(
+                              text = "Search any recipe",
+                              color = Color.Gray
+                         )
+                    },
+                    leadingIcon = {
+                         Icon(
+                              Icons.Default.Search,
+                              contentDescription = "Search",
+                              tint = Color.Gray
+                         )
+                    },
+                    modifier = Modifier
+                         .fillMaxWidth()
+                         .height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                         unfocusedBorderColor = Color.LightGray,
+                         focusedBorderColor = Color.Gray,
+                         unfocusedContainerColor = Color(0xFFF5F5F5),
+                         focusedContainerColor = Color(0xFFF5F5F5)
+                    )
+               )
           }
-     ) { paddingValues ->
+
+          // Content
           LazyColumn(
                modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
                     .background(Color.White),
                contentPadding = PaddingValues(16.dp),
                verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -137,7 +134,7 @@ fun HomeScreen(
                               horizontalArrangement = Arrangement.spacedBy(12.dp),
                               contentPadding = PaddingValues(horizontal = 4.dp)
                          ) {
-                              if (state.isLoading) {
+                              if (state.isPopularRecipesLoading) {
                                    item {
                                         Box(
                                              modifier = Modifier.size(200.dp, 120.dp),
@@ -147,7 +144,7 @@ fun HomeScreen(
                                         }
                                    }
                               } else {
-                                   items(state.popularRecipies.take(5)) { recipe ->
+                                   items(state.popularRecipes.take(5)) { recipe ->
                                         PopularRecipeCard(
                                              recipe = recipe,
                                              onFavoriteClick = {
@@ -194,11 +191,11 @@ fun HomeScreen(
                          }
                     }
                } else {
-                    items(state.recipies) { recipe ->
+                    items(state.recipes) { recipie ->
                          RecipeListItem(
-                              recipe = recipe,
+                              recipie = recipie,
                               onFavoriteClick = {
-                                   homeViewModel.onEvent(HomeScreenEvent.ToggleFavorite(recipe))
+                                   homeViewModel.onEvent(HomeScreenEvent.ToggleFavorite(recipie))
                               }
                          )
                     }
@@ -209,7 +206,7 @@ fun HomeScreen(
 
 @Composable
 fun PopularRecipeCard(
-     recipe: com.example.recipiesearch.domain.model.Recipie,
+     recipe: Recipie,
      onFavoriteClick: () -> Unit
 ) {
      Box(
@@ -312,7 +309,7 @@ fun PopularRecipeCard(
 
 @Composable
 fun RecipeListItem(
-     recipe: com.example.recipiesearch.domain.model.Recipie,
+     recipie: Recipie,
      onFavoriteClick: () -> Unit
 ) {
      Card(
@@ -334,10 +331,10 @@ fun RecipeListItem(
                          .clip(RoundedCornerShape(8.dp))
                          .background(Color.LightGray)
                ) {
-                    if (recipe.image.isNotEmpty()) {
+                    if (recipie.image.isNotEmpty()) {
                          AsyncImage(
-                              model = recipe.image,
-                              contentDescription = recipe.title,
+                              model = recipie.image,
+                              contentDescription = recipie.title,
                               modifier = Modifier.fillMaxSize(),
                               contentScale = ContentScale.Crop
                          )
@@ -351,7 +348,7 @@ fun RecipeListItem(
                     modifier = Modifier.weight(1f)
                ) {
                     Text(
-                         text = recipe.title,
+                         text = recipie.title,
                          fontSize = 16.sp,
                          fontWeight = FontWeight.Medium,
                          color = Color.Black,
@@ -359,7 +356,7 @@ fun RecipeListItem(
                          overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                         text = "Ready in ${recipe.readyInMinutes} min",
+                         text = "Ready in ${if (recipie.readyInMinutes == 0) 25 else recipie.readyInMinutes} min",
                          fontSize = 12.sp,
                          color = Color.Gray
                     )
@@ -371,43 +368,12 @@ fun RecipeListItem(
                     modifier = Modifier.size(24.dp)
                ) {
                     Icon(
-                         imageVector = if (recipe.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                         imageVector = if (recipie.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                          contentDescription = "Favorite",
-                         tint = if (recipe.isFavourite) Color.Red else Color.Gray,
+                         tint = if (recipie.isFavourite) Color.Red else Color.Gray,
                          modifier = Modifier.size(20.dp)
                     )
                }
           }
-     }
-}
-
-@Composable
-fun BottomNavigationBar() {
-     NavigationBar(
-          containerColor = Color.White,
-          contentColor = Color.Gray
-     ) {
-          NavigationBarItem(
-               icon = {
-                    Icon(
-                         Icons.Default.Home,
-                         contentDescription = "Home"
-                    )
-               },
-               label = { Text("Home") },
-               selected = true,
-               onClick = { }
-          )
-          NavigationBarItem(
-               icon = {
-                    Icon(
-                         Icons.Default.Favorite,
-                         contentDescription = "Favourite"
-                    )
-               },
-               label = { Text("Favourite") },
-               selected = false,
-               onClick = { }
-          )
      }
 }
