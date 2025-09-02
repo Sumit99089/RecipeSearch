@@ -7,5 +7,5 @@ data class HomeScreenState(
     val recipies: List<Recipie> = emptyList(),
     val popularRecipies: List<Recipie> = emptyList(),
     val error: String = "",
-    val searchQuery: String = ""
+    val searchQuery: Boolean = false
 )

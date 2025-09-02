@@ -26,8 +26,8 @@ class RecipieRepositoryImpl @Inject constructor(
         return flow {
             emit(Resource.Loading(true))
             try {
-                val remoteRecipes = api.getAllRecipies(query)
-                val favouriteIds = dao.getAllFavouritesIds() // local cache
+                val remoteRecipes = api.getAllRecipies(query).results // Change here
+                val favouriteIds = dao.getAllFavouritesIds()
 
                 val recipes = remoteRecipes.map { dto ->
                     dto.toRecipie().copy(
@@ -51,12 +51,12 @@ class RecipieRepositoryImpl @Inject constructor(
             emit(Resource.Loading(true))
 
             val apiResponse = try {
-                api.getPopularRecipies()
+                api.getPopularRecipies().recipes // Change here
             } catch (e: HttpException) {
                 e.printStackTrace()
                 emit(Resource.Error("Couldn't load data: ${e.localizedMessage ?: "Unknown error"}"))
                 null
-            } catch (e: IOException) { // important: handle network errors too
+            } catch (e: IOException) {
                 e.printStackTrace()
                 emit(Resource.Error("Couldn't reach server. Check your internet connection."))
                 null

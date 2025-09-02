@@ -22,7 +22,7 @@ class HomeViewModel @Inject constructor(
     private var searchJob: Job? = null
     init {
         viewModelScope.launch {
-//            repository.getAllRecipies("")
+
             getAllRecipies()
         }
     }
