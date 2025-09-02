@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -19,6 +20,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.recipiesearch.presentation.favourite.FavoriteScreen
 import com.example.recipiesearch.presentation.home.HomeScreen
+import com.example.recipiesearch.presentation.home.HomeScreenEvent
+import com.example.recipiesearch.presentation.home.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +86,14 @@ fun MainNavigation() {
                 startDestination = Screen.Home.route
             ) {
                 composable(Screen.Home.route) {
-                    HomeScreen()
+                    val homeViewModel: HomeViewModel = hiltViewModel()
+
+                    // Refresh favorite states when navigating to home
+                    LaunchedEffect(navBackStackEntry) {
+                        homeViewModel.onEvent(HomeScreenEvent.RefreshFavoriteStates)
+                    }
+
+                    HomeScreen(homeViewModel = homeViewModel)
                 }
                 composable(Screen.Favourite.route) {
                     FavoriteScreen()

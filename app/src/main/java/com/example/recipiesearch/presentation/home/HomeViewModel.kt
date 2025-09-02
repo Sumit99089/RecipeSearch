@@ -1,6 +1,5 @@
 package com.example.recipiesearch.presentation.home
 
-
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +34,15 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event: HomeScreenEvent) {
         when(event) {
             is HomeScreenEvent.Refresh -> {
-                getPopularRecipies()
-                getAllRecipies(state.searchQuery)
+                refreshAllData()
             }
 
             is HomeScreenEvent.LoadPopularRecipes -> {
                 getPopularRecipies()
+            }
+
+            is HomeScreenEvent.RefreshFavoriteStates -> {
+                refreshFavoriteStates()
             }
 
             is HomeScreenEvent.OnSearchQuery -> {
@@ -63,6 +65,60 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun refreshAllData() {
+        viewModelScope.launch {
+            // Start loading state
+            state = state.copy(isLoading = true, isPopularRecipesLoading = true)
+
+            // Refresh popular recipes
+            getPopularRecipies()
+
+            // Refresh current recipe list
+            getAllRecipies(state.searchQuery.ifEmpty { "" })
+
+            // Refresh favorite states
+            refreshFavoriteStates()
+        }
+    }
+
+    private fun refreshFavoriteStates() {
+        viewModelScope.launch {
+            try {
+                // Get current favorite IDs from database
+                val favoriteIds = repository.getFavouriteRecipies().let { flow ->
+                    var ids: List<Int> = emptyList()
+                    flow.collect { result ->
+                        when (result) {
+                            is Resource.Success -> {
+                                ids = result.data?.map { it.id } ?: emptyList()
+                            }
+                            else -> {}
+                        }
+                    }
+                    ids
+                }
+
+                // Update recipe states
+                val updatedRecipes = state.recipes.map { recipe ->
+                    recipe.copy(isFavourite = favoriteIds.contains(recipe.id))
+                }
+
+                val updatedPopularRecipes = state.popularRecipes.map { recipe ->
+                    recipe.copy(isFavourite = favoriteIds.contains(recipe.id))
+                }
+
+                state = state.copy(
+                    recipes = updatedRecipes,
+                    popularRecipes = updatedPopularRecipes
+                )
+
+                Log.d("HomeScreen", "Refreshed favorite states for ${favoriteIds.size} favorites")
+            } catch (e: Exception) {
+                Log.e("HomeScreen", "Error refreshing favorite states: ${e.message}")
+            }
+        }
+    }
+
     private fun getAllRecipies(query: String = "") {
         viewModelScope.launch {
             val searchQuery = query.trim().lowercase()
@@ -73,8 +129,15 @@ class HomeViewModel @Inject constructor(
                     when(result) {
                         is Resource.Success -> {
                             result.data?.let { recipies ->
+                                // Get current favorite IDs to maintain state
+                                val favoriteIds = getFavoriteIds()
+
+                                val recipesWithFavoriteState = recipies.map { recipe ->
+                                    recipe.copy(isFavourite = favoriteIds.contains(recipe.id))
+                                }
+
                                 state = state.copy(
-                                    recipes = recipies,
+                                    recipes = recipesWithFavoriteState,
                                     error = ""
                                 )
                             }
@@ -103,8 +166,15 @@ class HomeViewModel @Inject constructor(
                     when(result) {
                         is Resource.Success -> {
                             result.data?.let { recipies ->
+                                // Get current favorite IDs to maintain state
+                                val favoriteIds = getFavoriteIds()
+
+                                val recipesWithFavoriteState = recipies.map { recipe ->
+                                    recipe.copy(isFavourite = favoriteIds.contains(recipe.id))
+                                }
+
                                 state = state.copy(
-                                    popularRecipes = recipies,
+                                    popularRecipes = recipesWithFavoriteState,
                                     error = ""
                                 )
                             }
@@ -122,6 +192,24 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 }
+        }
+    }
+
+    private suspend fun getFavoriteIds(): List<Int> {
+        return try {
+            var ids: List<Int> = emptyList()
+            repository.getFavouriteRecipies().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        ids = result.data?.map { it.id } ?: emptyList()
+                    }
+                    else -> {}
+                }
+            }
+            ids
+        } catch (e: Exception) {
+            Log.e("HomeScreen", "Error getting favorite IDs: ${e.message}")
+            emptyList()
         }
     }
 
