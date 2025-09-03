@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -20,7 +19,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.recipiesearch.presentation.favourite.FavoriteScreen
 import com.example.recipiesearch.presentation.home.HomeScreen
-import com.example.recipiesearch.presentation.home.HomeScreenEvent
 import com.example.recipiesearch.presentation.home.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,8 +44,8 @@ fun MainNavigation() {
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
-                contentColor = Color.Gray
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ) {
                 bottomNavItems.forEach { item ->
                     NavigationBarItem(
@@ -69,7 +67,14 @@ fun MainNavigation() {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     )
                 }
             }
@@ -79,7 +84,7 @@ fun MainNavigation() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             NavHost(
                 navController = navController,
@@ -90,7 +95,7 @@ fun MainNavigation() {
 
                     // Refresh favorite states when navigating to home
                     LaunchedEffect(navBackStackEntry) {
-                        homeViewModel.onEvent(HomeScreenEvent.RefreshFavoriteStates)
+                        homeViewModel.refreshFavoriteStates()
                     }
 
                     HomeScreen(homeViewModel = homeViewModel)

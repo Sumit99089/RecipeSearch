@@ -28,20 +28,8 @@ class FavouriteViewModel @Inject constructor(
 
     fun onEvent(event: FavouriteScreenEvent) {
         when(event) {
-            is FavouriteScreenEvent.LoadFavorites -> {
-                loadFavoriteRecipes()
-            }
-
-            is FavouriteScreenEvent.Refresh -> {
-                loadFavoriteRecipes()
-            }
-
             is FavouriteScreenEvent.RemoveFromFavorites -> {
                 removeFromFavorites(event.recipe)
-            }
-
-            is FavouriteScreenEvent.ToggleFavorite -> {
-                toggleFavorite(event.recipe)
             }
         }
     }
@@ -56,8 +44,7 @@ class FavouriteViewModel @Inject constructor(
                             result.data?.let { recipes ->
                                 state = state.copy(
                                     favoriteRecipes = recipes,
-                                    error = "",
-                                    isEmpty = recipes.isEmpty()
+                                    error = ""
                                 )
                             }
                             Log.d("FavoriteScreen", "Favorite recipes loaded: ${state.favoriteRecipes.size}")
@@ -86,35 +73,12 @@ class FavouriteViewModel @Inject constructor(
 
                 // Update local state immediately for better UX
                 val updatedFavorites = state.favoriteRecipes.filter { it.id != recipe.id }
-                state = state.copy(
-                    favoriteRecipes = updatedFavorites,
-                    isEmpty = updatedFavorites.isEmpty()
-                )
+                state = state.copy(favoriteRecipes = updatedFavorites)
 
                 Log.d("FavoriteScreen", "Removed recipe from favorites: ${recipe.title}")
             } catch (e: Exception) {
                 Log.e("FavoriteScreen", "Error removing from favorites: ${e.message}")
                 state = state.copy(error = "Failed to remove from favorites")
-            }
-        }
-    }
-
-    private fun toggleFavorite(recipe: Recipie) {
-        viewModelScope.launch {
-            try {
-                if (recipe.isFavourite) {
-                    repository.clearFavouriteRecipie(recipe.id)
-                } else {
-                    repository.insertFavouriteRecipie(recipe)
-                }
-
-                // Reload favorites to get updated list
-                loadFavoriteRecipes()
-
-                Log.d("FavoriteScreen", "Toggled favorite for recipe: ${recipe.title}")
-            } catch (e: Exception) {
-                Log.e("FavoriteScreen", "Error toggling favorite: ${e.message}")
-                state = state.copy(error = "Failed to update favorite")
             }
         }
     }

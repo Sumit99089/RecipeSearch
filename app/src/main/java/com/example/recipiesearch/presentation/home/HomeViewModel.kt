@@ -24,79 +24,33 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Load popular recipes on startup
+            // Load popular recipes and default recipes on startup
             getPopularRecipies()
-            // Load all recipes with empty query (gets random recipes)
             getAllRecipies("")
         }
     }
 
     fun onEvent(event: HomeScreenEvent) {
         when(event) {
-            is HomeScreenEvent.Refresh -> {
-                refreshAllData()
-            }
-
-            is HomeScreenEvent.LoadPopularRecipes -> {
-                getPopularRecipies()
-            }
-
-            is HomeScreenEvent.RefreshFavoriteStates -> {
-                refreshFavoriteStates()
-            }
-
             is HomeScreenEvent.OnSearchQuery -> {
-                state = state.copy(searchQuery = event.query, isSearching = event.query.isNotBlank())
+                state = state.copy(searchQuery = event.query)
                 searchJob?.cancel()
                 searchJob = viewModelScope.launch {
                     delay(500L) // Debounce search
                     getAllRecipies(event.query)
                 }
             }
-
             is HomeScreenEvent.ToggleFavorite -> {
                 toggleFavorite(event.recipe)
             }
-
-            is HomeScreenEvent.ClearSearch -> {
-                state = state.copy(searchQuery = "", isSearching = false)
-                getAllRecipies("")
-            }
         }
     }
 
-    private fun refreshAllData() {
-        viewModelScope.launch {
-            // Start loading state
-            state = state.copy(isLoading = true, isPopularRecipesLoading = true)
-
-            // Refresh popular recipes
-            getPopularRecipies()
-
-            // Refresh current recipe list
-            getAllRecipies(state.searchQuery.ifEmpty { "" })
-
-            // Refresh favorite states
-            refreshFavoriteStates()
-        }
-    }
-
-    private fun refreshFavoriteStates() {
+    fun refreshFavoriteStates() {
         viewModelScope.launch {
             try {
                 // Get current favorite IDs from database
-                val favoriteIds = repository.getFavouriteRecipies().let { flow ->
-                    var ids: List<Int> = emptyList()
-                    flow.collect { result ->
-                        when (result) {
-                            is Resource.Success -> {
-                                ids = result.data?.map { it.id } ?: emptyList()
-                            }
-                            else -> {}
-                        }
-                    }
-                    ids
-                }
+                val favoriteIds = getFavoriteIds()
 
                 // Update recipe states
                 val updatedRecipes = state.recipes.map { recipe ->

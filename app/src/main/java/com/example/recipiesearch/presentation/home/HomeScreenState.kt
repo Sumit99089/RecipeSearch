@@ -8,6 +8,5 @@ data class HomeScreenState(
     val recipes: List<Recipie> = emptyList(),
     val popularRecipes: List<Recipie> = emptyList(),
     val error: String = "",
-    val searchQuery: String = "",
-    val isSearching: Boolean=false
+    val searchQuery: String = ""
 )

@@ -5,6 +5,5 @@ import com.example.recipiesearch.domain.model.Recipie
 data class FavouriteScreenState(
     val isLoading: Boolean = false,
     val favoriteRecipes: List<Recipie> = emptyList(),
-    val error: String = "",
-    val isEmpty: Boolean = false
+    val error: String = ""
 )

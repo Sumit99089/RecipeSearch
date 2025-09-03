@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,8 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.recipiesearch.domain.model.Recipie
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,203 +33,251 @@ fun HomeScreen(
      homeViewModel: HomeViewModel = hiltViewModel()
 ) {
      val state = homeViewModel.state
-     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = state.isLoading)
 
      // Listen for navigation events to refresh favorite states
      LaunchedEffect(Unit) {
-          homeViewModel.onEvent(HomeScreenEvent.RefreshFavoriteStates)
+          homeViewModel.refreshFavoriteStates()
      }
 
-     SwipeRefresh(
-          state = swipeRefreshState,
-          onRefresh = {
-               homeViewModel.onEvent(HomeScreenEvent.Refresh)
-          }
+     Column(
+          modifier = Modifier
+               .fillMaxSize()
+               .background(MaterialTheme.colorScheme.background)
      ) {
-          Column(
-               modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-          ) {
-               // Top Bar
-               Column(
-                    modifier = Modifier
-                         .fillMaxWidth()
-                         .background(Color.White)
-                         .padding(16.dp)
-               ) {
-                    // Header
-                    Row(
-                         modifier = Modifier.fillMaxWidth(),
-                         horizontalArrangement = Arrangement.SpaceBetween,
-                         verticalAlignment = Alignment.CenterVertically
-                    ) {
-                         Column {
-                              Row(
-                                   verticalAlignment = Alignment.CenterVertically
-                              ) {
-                                   Text(
-                                        text = "👋",
-                                        fontSize = 20.sp
-                                   )
-                                   Spacer(modifier = Modifier.width(8.dp))
-                                   Text(
-                                        text = "Hey Name",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.Black
-                                   )
-                              }
-                              Text(
-                                   text = "Discover tasty and healthy receipt",
-                                   fontSize = 14.sp,
-                                   color = Color.Gray
-                              )
-                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Search Bar
-                    OutlinedTextField(
-                         value = state.searchQuery,
-                         onValueChange = {
-                              homeViewModel.onEvent(HomeScreenEvent.OnSearchQuery(it))
-                         },
-                         placeholder = {
-                              Text(
-                                   text = "Search any recipe",
-                                   color = Color.Gray
-                              )
-                         },
-                         leadingIcon = {
-                              Icon(
-                                   Icons.Default.Search,
-                                   contentDescription = "Search",
-                                   tint = Color.Gray
-                              )
-                         },
-                         modifier = Modifier
-                              .fillMaxWidth()
-                              .height(56.dp),
-                         shape = RoundedCornerShape(28.dp),
-                         colors = OutlinedTextFieldDefaults.colors(
-                              unfocusedBorderColor = Color.LightGray,
-                              focusedBorderColor = Color.Gray,
-                              unfocusedContainerColor = Color(0xFFF5F5F5),
-                              focusedContainerColor = Color(0xFFF5F5F5)
-                         )
-                    )
+          HomeTopSection(
+               searchQuery = state.searchQuery,
+               onSearchQueryChange = { query ->
+                    homeViewModel.onEvent(HomeScreenEvent.OnSearchQuery(query))
                }
+          )
 
-               // Content
-               LazyColumn(
-                    modifier = Modifier
-                         .fillMaxSize()
-                         .background(Color.White),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-               ) {
-                    // Popular Recipes Section
-                    item {
-                         Column {
-                              Text(
-                                   text = "Popular Recipes",
-                                   fontSize = 18.sp,
-                                   fontWeight = FontWeight.SemiBold,
-                                   color = Color.Black
-                              )
-
-                              Spacer(modifier = Modifier.height(12.dp))
-
-                              LazyRow(
-                                   horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                   contentPadding = PaddingValues(horizontal = 4.dp)
-                              ) {
-                                   if (state.isPopularRecipesLoading) {
-                                        items(2) { // Show 2 loading placeholders
-                                             PopularRecipeLoadingCard()
-                                        }
-                                   } else {
-                                        items(state.popularRecipes.take(5)) { recipe ->
-                                             PopularRecipeCard(
-                                                  recipe = recipe,
-                                                  onFavoriteClick = {
-                                                       homeViewModel.onEvent(HomeScreenEvent.ToggleFavorite(recipe))
-                                                  }
-                                             )
-                                        }
-                                   }
-                              }
-                         }
-                    }
-
-                    // All Recipes Section
-                    item {
-                         Text(
-                              text = "All recipes",
-                              fontSize = 18.sp,
-                              fontWeight = FontWeight.SemiBold,
-                              color = Color.Black
-                         )
-                    }
-
-                    // Recipe List
-                    if (state.isLoading && state.recipes.isEmpty()) {
-                         items(3) { // Show 3 loading placeholders
-                              RecipeListItemLoading()
-                         }
-                    } else if (state.error.isNotEmpty()) {
-                         item {
-                              Card(
-                                   modifier = Modifier.fillMaxWidth(),
-                                   colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
-                              ) {
-                                   Text(
-                                        text = state.error,
-                                        color = Color(0xFFE65100),
-                                        modifier = Modifier.padding(16.dp)
-                                   )
-                              }
-                         }
-                    } else {
-                         items(state.recipes) { recipie ->
-                              RecipeListItem(
-                                   recipie = recipie,
-                                   onFavoriteClick = {
-                                        homeViewModel.onEvent(HomeScreenEvent.ToggleFavorite(recipie))
-                                   }
-                              )
-                         }
-                    }
+          HomeContent(
+               state = state,
+               onToggleFavorite = { recipe ->
+                    homeViewModel.onEvent(HomeScreenEvent.ToggleFavorite(recipe))
                }
-          }
+          )
      }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PopularRecipeLoadingCard() {
-     Box(
+private fun HomeTopSection(
+     searchQuery: String,
+     onSearchQueryChange: (String) -> Unit
+) {
+     Column(
           modifier = Modifier
-               .width(200.dp)
-               .height(120.dp)
-               .clip(RoundedCornerShape(12.dp))
-               .background(Color.LightGray.copy(alpha = 0.3f))
+               .fillMaxWidth()
+               .background(MaterialTheme.colorScheme.background)
+               .padding(16.dp)
      ) {
-          CircularProgressIndicator(
-               modifier = Modifier.align(Alignment.Center),
-               strokeWidth = 2.dp,
-               color = Color.Gray
+          HomeHeader()
+
+          Spacer(modifier = Modifier.height(16.dp))
+
+          SearchBar(
+               searchQuery = searchQuery,
+               onSearchQueryChange = onSearchQueryChange
           )
      }
 }
 
 @Composable
-fun RecipeListItemLoading() {
+private fun HomeHeader() {
+     Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+     ) {
+          Column {
+               Row(
+                    verticalAlignment = Alignment.CenterVertically
+               ) {
+                    Text(
+                         text = "👋",
+                         fontSize = 20.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                         text = "Hey Name",
+                         fontSize = 18.sp,
+                         fontWeight = FontWeight.Medium,
+                         color = MaterialTheme.colorScheme.onBackground
+                    )
+               }
+               Text(
+                    text = "Discover tasty and healthy recipe",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+               )
+          }
+     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchBar(
+     searchQuery: String,
+     onSearchQueryChange: (String) -> Unit
+) {
+     OutlinedTextField(
+          value = searchQuery,
+          onValueChange = onSearchQueryChange,
+          placeholder = {
+               Text(
+                    text = "Search any recipe",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+               )
+          },
+          leadingIcon = {
+               Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+               )
+          },
+          modifier = Modifier
+               .fillMaxWidth()
+               .height(56.dp),
+          shape = RoundedCornerShape(28.dp),
+          colors = OutlinedTextFieldDefaults.colors(
+               unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+               focusedBorderColor = MaterialTheme.colorScheme.primary,
+               unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+               focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+          )
+     )
+}
+
+@Composable
+private fun HomeContent(
+     state: HomeScreenState,
+     onToggleFavorite: (Recipie) -> Unit
+) {
+     LazyColumn(
+          modifier = Modifier
+               .fillMaxSize()
+               .background(MaterialTheme.colorScheme.background),
+          contentPadding = PaddingValues(16.dp),
+          verticalArrangement = Arrangement.spacedBy(16.dp)
+     ) {
+          // Popular Recipes Section
+          item {
+               PopularRecipesSection(
+                    popularRecipes = state.popularRecipes,
+                    isLoading = state.isPopularRecipesLoading,
+                    onToggleFavorite = onToggleFavorite
+               )
+          }
+
+          // All Recipes Section
+          item {
+               Text(
+                    text = "All recipes",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+               )
+          }
+
+          // Recipe List
+          if (state.isLoading && state.recipes.isEmpty()) {
+               items(3) { // Show 3 loading placeholders
+                    RecipeListItemLoading()
+               }
+          } else if (state.error.isNotEmpty()) {
+               item {
+                    ErrorCard(error = state.error)
+               }
+          } else {
+               items(state.recipes) { recipe ->
+                    RecipeListItem(
+                         recipe = recipe,
+                         onFavoriteClick = { onToggleFavorite(recipe) }
+                    )
+               }
+          }
+     }
+}
+
+@Composable
+private fun PopularRecipesSection(
+     popularRecipes: List<Recipie>,
+     isLoading: Boolean,
+     onToggleFavorite: (Recipie) -> Unit
+) {
+     Column {
+          Text(
+               text = "Popular Recipes",
+               fontSize = 18.sp,
+               fontWeight = FontWeight.SemiBold,
+               color = MaterialTheme.colorScheme.onBackground
+          )
+
+          Spacer(modifier = Modifier.height(12.dp))
+
+          LazyRow(
+               horizontalArrangement = Arrangement.spacedBy(12.dp),
+               contentPadding = PaddingValues(horizontal = 4.dp)
+          ) {
+               if (isLoading) {
+                    items(2) { // Show 2 loading placeholders
+                         PopularRecipeLoadingCard()
+                    }
+               } else {
+                    items(popularRecipes.take(5)) { recipe ->
+                         PopularRecipeCard(
+                              recipe = recipe,
+                              onFavoriteClick = { onToggleFavorite(recipe) }
+                         )
+                    }
+               }
+          }
+     }
+}
+
+@Composable
+private fun ErrorCard(error: String) {
+     Card(
+          modifier = Modifier.fillMaxWidth(),
+          colors = CardDefaults.cardColors(
+               containerColor = MaterialTheme.colorScheme.errorContainer
+          )
+     ) {
+          Text(
+               text = error,
+               color = MaterialTheme.colorScheme.onErrorContainer,
+               modifier = Modifier.padding(16.dp)
+          )
+     }
+}
+
+@Composable
+private fun PopularRecipeLoadingCard() {
+     Box(
+          modifier = Modifier
+               .width(200.dp)
+               .height(120.dp)
+               .clip(RoundedCornerShape(12.dp))
+               .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+     ) {
+          CircularProgressIndicator(
+               modifier = Modifier.align(Alignment.Center),
+               strokeWidth = 2.dp,
+               color = MaterialTheme.colorScheme.primary
+          )
+     }
+}
+
+@Composable
+private fun RecipeListItemLoading() {
      Card(
           modifier = Modifier.fillMaxWidth(),
           shape = RoundedCornerShape(12.dp),
-          colors = CardDefaults.cardColors(containerColor = Color.White),
+          colors = CardDefaults.cardColors(
+               containerColor = MaterialTheme.colorScheme.surface
+          ),
           elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
      ) {
           Row(
@@ -246,14 +291,14 @@ fun RecipeListItemLoading() {
                     modifier = Modifier
                          .size(60.dp)
                          .clip(RoundedCornerShape(8.dp))
-                         .background(Color.LightGray.copy(alpha = 0.3f))
+                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                ) {
                     CircularProgressIndicator(
                          modifier = Modifier
                               .size(20.dp)
                               .align(Alignment.Center),
                          strokeWidth = 2.dp,
-                         color = Color.Gray
+                         color = MaterialTheme.colorScheme.primary
                     )
                }
 
@@ -268,7 +313,7 @@ fun RecipeListItemLoading() {
                               .width(150.dp)
                               .height(16.dp)
                               .background(
-                                   Color.LightGray.copy(alpha = 0.3f),
+                                   MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                                    RoundedCornerShape(4.dp)
                               )
                     )
@@ -278,7 +323,7 @@ fun RecipeListItemLoading() {
                               .width(100.dp)
                               .height(12.dp)
                               .background(
-                                   Color.LightGray.copy(alpha = 0.3f),
+                                   MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                                    RoundedCornerShape(4.dp)
                               )
                     )
@@ -289,7 +334,7 @@ fun RecipeListItemLoading() {
                     modifier = Modifier
                          .size(24.dp)
                          .background(
-                              Color.LightGray.copy(alpha = 0.3f),
+                              MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                               CircleShape
                          )
                )
@@ -298,7 +343,7 @@ fun RecipeListItemLoading() {
 }
 
 @Composable
-fun PopularRecipeCard(
+private fun PopularRecipeCard(
      recipe: Recipie,
      onFavoriteClick: () -> Unit
 ) {
@@ -309,27 +354,10 @@ fun PopularRecipeCard(
                .clip(RoundedCornerShape(12.dp))
      ) {
           // Background Image or placeholder
-          if (recipe.image.isNotEmpty()) {
-               AsyncImage(
-                    model = recipe.image,
-                    contentDescription = recipe.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-               )
-          } else {
-               Box(
-                    modifier = Modifier
-                         .fillMaxSize()
-                         .background(
-                              brush = Brush.horizontalGradient(
-                                   colors = listOf(
-                                        Color(0xFFFF9800),
-                                        Color(0xFFFF5722)
-                                   )
-                              )
-                         )
-               )
-          }
+          RecipeCardBackground(
+               imageUrl = recipe.image,
+               title = recipe.title
+          )
 
           // Gradient overlay
           Box(
@@ -338,8 +366,8 @@ fun PopularRecipeCard(
                     .background(
                          brush = Brush.verticalGradient(
                               colors = listOf(
-                                   Color.Transparent,
-                                   Color.Black.copy(alpha = 0.6f)
+                                   androidx.compose.ui.graphics.Color.Transparent,
+                                   androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
                               )
                          )
                     )
@@ -352,22 +380,11 @@ fun PopularRecipeCard(
                     .padding(8.dp),
                contentAlignment = Alignment.TopEnd
           ) {
-               IconButton(
+               FavoriteButton(
+                    isFavorite = recipe.isFavourite,
                     onClick = onFavoriteClick,
-                    modifier = Modifier
-                         .size(28.dp)
-                         .background(
-                              color = Color.Black.copy(alpha = 0.3f),
-                              shape = CircleShape
-                         )
-               ) {
-                    Icon(
-                         imageVector = if (recipe.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                         contentDescription = "Favorite",
-                         tint = if (recipe.isFavourite) Color.Red else Color.White,
-                         modifier = Modifier.size(16.dp)
-                    )
-               }
+                    modifier = Modifier.size(28.dp)
+               )
           }
 
           // Content
@@ -377,14 +394,13 @@ fun PopularRecipeCard(
                     .padding(12.dp),
                verticalArrangement = Arrangement.SpaceBetween
           ) {
-               // Empty space for top
                Spacer(modifier = Modifier.weight(1f))
 
                // Bottom content
                Column {
                     Text(
                          text = recipe.title,
-                         color = Color.White,
+                         color = androidx.compose.ui.graphics.Color.White,
                          fontSize = 16.sp,
                          fontWeight = FontWeight.SemiBold,
                          maxLines = 1,
@@ -392,7 +408,7 @@ fun PopularRecipeCard(
                     )
                     Text(
                          text = "Ready in ${if (recipe.readyInMinutes == 0) 25 else recipe.readyInMinutes} min",
-                         color = Color.White.copy(alpha = 0.9f),
+                         color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
                          fontSize = 12.sp
                     )
                }
@@ -401,14 +417,67 @@ fun PopularRecipeCard(
 }
 
 @Composable
-fun RecipeListItem(
-     recipie: Recipie,
+private fun RecipeCardBackground(
+     imageUrl: String,
+     title: String
+) {
+     if (imageUrl.isNotEmpty()) {
+          AsyncImage(
+               model = imageUrl,
+               contentDescription = title,
+               modifier = Modifier.fillMaxSize(),
+               contentScale = ContentScale.Crop
+          )
+     } else {
+          Box(
+               modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                         brush = Brush.horizontalGradient(
+                              colors = listOf(
+                                   MaterialTheme.colorScheme.primary,
+                                   MaterialTheme.colorScheme.secondary
+                              )
+                         )
+                    )
+          )
+     }
+}
+
+@Composable
+private fun FavoriteButton(
+     isFavorite: Boolean,
+     onClick: () -> Unit,
+     modifier: Modifier = Modifier
+) {
+     IconButton(
+          onClick = onClick,
+          modifier = modifier
+               .background(
+                    color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f),
+                    shape = CircleShape
+               )
+     ) {
+          Icon(
+               imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+               contentDescription = "Favorite",
+               tint = if (isFavorite) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.White,
+               modifier = Modifier.size(16.dp)
+          )
+     }
+}
+
+@Composable
+private fun RecipeListItem(
+     recipe: Recipie,
      onFavoriteClick: () -> Unit
 ) {
      Card(
           modifier = Modifier.fillMaxWidth(),
           shape = RoundedCornerShape(12.dp),
-          colors = CardDefaults.cardColors(containerColor = Color.White),
+          colors = CardDefaults.cardColors(
+               containerColor = MaterialTheme.colorScheme.surface
+          ),
           elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
      ) {
           Row(
@@ -418,44 +487,11 @@ fun RecipeListItem(
                verticalAlignment = Alignment.CenterVertically
           ) {
                // Recipe Image
-               Box(
-                    modifier = Modifier
-                         .size(60.dp)
-                         .clip(RoundedCornerShape(8.dp))
-                         .background(Color.LightGray.copy(alpha = 0.2f))
-               ) {
-                    if (recipie.image.isNotEmpty()) {
-                         AsyncImage(
-                              model = recipie.image,
-                              contentDescription = recipie.title,
-                              modifier = Modifier.fillMaxSize(),
-                              contentScale = ContentScale.Crop
-                         )
-                    } else {
-                         // Placeholder for missing image
-                         Box(
-                              modifier = Modifier
-                                   .fillMaxSize()
-                                   .background(
-                                        brush = Brush.linearGradient(
-                                             colors = listOf(
-                                                  Color(0xFFE0E0E0),
-                                                  Color(0xFFF5F5F5)
-                                             ),
-                                             start = Offset(0f, 0f),            // top-left
-                                             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY) // bottom-right
-                                        )
-                                   ),
-                              contentAlignment = Alignment.Center
-                         ) {
-                              Text(
-                                   text = "🍽️",
-                                   fontSize = 32.sp
-                              )
-                         }
-
-                    }
-               }
+               RecipeListItemImage(
+                    imageUrl = recipe.image,
+                    title = recipe.title,
+                    modifier = Modifier.size(60.dp)
+               )
 
                Spacer(modifier = Modifier.width(12.dp))
 
@@ -464,17 +500,19 @@ fun RecipeListItem(
                     modifier = Modifier.weight(1f)
                ) {
                     Text(
-                         text = recipie.title.ifEmpty { "Recipe name goes here" },
+                         text = recipe.title.ifEmpty { "Recipe name goes here" },
                          fontSize = 16.sp,
                          fontWeight = FontWeight.Medium,
-                         color = if (recipie.title.isEmpty()) Color.Gray else Color.Black,
+                         color = if (recipe.title.isEmpty())
+                              MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                         else MaterialTheme.colorScheme.onSurface,
                          maxLines = 2,
                          overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                         text = "Ready in ${if (recipie.readyInMinutes == 0) 25 else recipie.readyInMinutes} min",
+                         text = "Ready in ${if (recipe.readyInMinutes == 0) 25 else recipe.readyInMinutes} min",
                          fontSize = 12.sp,
-                         color = Color.Gray
+                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                }
 
@@ -484,10 +522,54 @@ fun RecipeListItem(
                     modifier = Modifier.size(24.dp)
                ) {
                     Icon(
-                         imageVector = if (recipie.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                         imageVector = if (recipe.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                          contentDescription = "Favorite",
-                         tint = if (recipie.isFavourite) Color.Red else Color.Gray,
+                         tint = if (recipe.isFavourite) androidx.compose.ui.graphics.Color.Red else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                          modifier = Modifier.size(20.dp)
+                    )
+               }
+          }
+     }
+}
+
+@Composable
+private fun RecipeListItemImage(
+     imageUrl: String,
+     title: String,
+     modifier: Modifier = Modifier
+) {
+     Box(
+          modifier = modifier
+               .clip(RoundedCornerShape(8.dp))
+               .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+     ) {
+          if (imageUrl.isNotEmpty()) {
+               AsyncImage(
+                    model = imageUrl,
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+               )
+          } else {
+               // Placeholder for missing image
+               Box(
+                    modifier = Modifier
+                         .fillMaxSize()
+                         .background(
+                              brush = Brush.linearGradient(
+                                   colors = listOf(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.colorScheme.surface
+                                   ),
+                                   start = Offset(0f, 0f),
+                                   end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                              )
+                         ),
+                    contentAlignment = Alignment.Center
+               ) {
+                    Text(
+                         text = "🍽️",
+                         fontSize = 32.sp
                     )
                }
           }

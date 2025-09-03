@@ -4,10 +4,7 @@ import com.example.recipiesearch.domain.model.Recipie
 
 
 sealed class HomeScreenEvent {
-    object Refresh : HomeScreenEvent()
-    object LoadPopularRecipes : HomeScreenEvent()
-    object RefreshFavoriteStates : HomeScreenEvent()
     data class OnSearchQuery(val query: String) : HomeScreenEvent()
     data class ToggleFavorite(val recipe: Recipie) : HomeScreenEvent()
-    object ClearSearch : HomeScreenEvent()
+    object Refresh: HomeScreenEvent()
 }
